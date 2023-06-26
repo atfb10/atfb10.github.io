@@ -38,7 +38,7 @@ def update(commit_msg='Updates Blog') -> None:
     repo.git.add(all=True)
     repo.index.commit(commit_msg)
     origin = repo.remote(name='origin')
-    origin.push()
+    origin.push(refspec='main:main')
 
 rand_txt = 'akjdfslkajs;dfajs'
 with open(PATH_TO_BLOG/"index.html", 'w') as f:

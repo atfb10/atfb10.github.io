@@ -10,6 +10,7 @@ Automatically Create Blog Posts & post to my github.io page
 # Imports
 import openai
 import os
+import requests
 import shutil as sh
 
 from bs4 import BeautifulSoup as Soup
@@ -31,7 +32,7 @@ PATH_TO_CONTENT.mkdir(exist_ok=True, parents=True)
 
 # Automate and push changes to blog
 
-def update(commit_msg='Updates Blog') -> None:
+def update_blog(commit_msg='Updates Blog') -> None:
     '''
     arguments: commit message for git
     returns: None
@@ -106,5 +107,61 @@ def write_to_index(path_to_new_content: str) -> None:
         f.write(str(soup.prettify(formatter='html')))
 
     return
+
+def create_prompt(title: str) -> str:
+    '''
+    arguments: name of blog
+    returns: prompt to API 
+    description: prompt to feed to OpenAi API
+    '''
+    prompt = """
+    Biography: My name is Adam. I am passionate about rock climbing and ski mountaineering. During my down time I like to watch Premier League Soccer. My favorite places in the world are Yosemite National Park, the Sierra Nevada Mountains, the Skykomish Valley, North Cascades National Park, Siurana, Margalef, and the New River Gorge. For work, I am a software developer, who mainly writes in the Python Language. I worked primarily as a full-stack developer, but as of late have focused primarily on machine learning. I have also spent time working as a National Park Ranger in Yosemite National Park, and working on mountaineering trips in the Sierra Nevada Mountains. I am a first generation college student. I was born and raised on a farm in Central Illinois.
+
+    Blog
+    Title: {}
+    tags: work-life balance, personal exploration, following your dreams
+    Summary: I talk about what it is like to go out of your comfort zone, try new things, do your absolute best, and dream big
+    Full Text: """.format(title)
+    return prompt
+
+def img_prompt(title: str) -> str:
+    '''
+    arguments: title of art
+    returns: prompt
+    description: create prompt for image creation using openai api
+    '''
+    prompt = f"An oil painting showing {title}" 
+    return prompt
+
+def save_img(image_url: str, file_name: str) -> int:
+    '''
+    arguments: image url, name of file
+    returns: status code
+    description: save_img saves the image
+    ''' 
+    image_res = requests.get(image_url, stream=True)
+
+    if image_res.status_code == 200:
+        with open(file_name, 'wb') as f:
+            sh.copyfileobj(image_res.raw, f)
+    else:
+        print('Error Downloading Image')
     
-path_to_new_content = create_new_blog(title='Test Title', content='Testing content writing!', cover_image='img.png')
+    return image_res.status_code
+
+# Create the blog post
+title = "Doing Hard Things"
+response = openai.Completion.create(
+    model='text-davinci-003',
+    prompt=create_prompt(title),
+    max_tokens=1000,
+    temperature=.75
+)
+blog_content = response['choices'][0]['text']
+img_response = openai.Image.create(prompt=img_prompt('Alpine Rock Climbing'), n =1, size="1024x1024")
+img_url = img_response['data'][0]['url']
+save_img(image_url=img_url, file_name='title.png')
+
+path_to_new_content = create_new_blog(title=title, content=blog_content, cover_image='title.png')
+write_to_index(path_to_new_content=path_to_new_content)
+update_blog()

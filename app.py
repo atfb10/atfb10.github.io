@@ -130,7 +130,7 @@ def img_prompt(title: str) -> str:
     returns: prompt
     description: create prompt for image creation using openai api
     '''
-    prompt = f"An oil painting showing {title}" 
+    prompt = f"A photorealistic image showing {title}" 
     return prompt
 
 def save_img(image_url: str, file_name: str) -> int:
